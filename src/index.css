@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  @apply min-h-screen;
+  background: linear-gradient(to bottom right, #e0f2fe, #bae6fd, #7dd3fc); /* Light mode */
+  transition: background 0.5s ease;
+}
+
+body.dark {
+  background: linear-gradient(to bottom right, #1f2937, #1e3a8a, #111827); /* Dark mode */
+}
