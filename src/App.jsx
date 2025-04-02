@@ -15,30 +15,72 @@ function App() {
   const [loading, setLoading] = useState(true);
   // State to toggle dark/light mode
   const [isDarkMode, setIsDarkMode] = useState(false);
+  // State for new movie form inputs
+  const [newMovie, setNewMovie] = useState({
+    title: '',
+    director: '',
+    year: '',
+    status: 'unwatched',
+    poster_path: ''
+  });
 
   // Effect to fetch movies from the backend on component mount
   useEffect(() => {
-    // Fetch movies from the local API endpoint
     fetch('http://localhost:3020/movies')
-      .then(response => response.json()) // Parse JSON response
+      .then(response => response.json())
       .then(data => {
-        setMovies(data); // Update movies state with fetched data
-        setLoading(false); // Set loading to false once data is received
+        setMovies(data);
+        setLoading(false);
       })
       .catch(error => {
-        console.error('Error fetching movies:', error); // Log any fetch errors
-        setLoading(false); // Stop loading even if there’s an error
+        console.error('Error fetching movies:', error);
+        setLoading(false);
       });
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   // Effect to toggle the 'dark' class on the body for dark mode
   useEffect(() => {
     if (isDarkMode) {
-      document.body.classList.add('dark'); // Add 'dark' class when isDarkMode is true
+      document.body.classList.add('dark');
     } else {
-      document.body.classList.remove('dark'); // Remove 'dark' class when false
+      document.body.classList.remove('dark');
     }
-  }, [isDarkMode]); // Runs whenever isDarkMode changes
+  }, [isDarkMode]);
+
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewMovie(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle adding a new movie
+  const handleAddMovie = (e) => {
+    e.preventDefault();
+    fetch('http://localhost:3020/movies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newMovie)
+    })
+      .then(response => response.json())
+      .then(data => {
+        setMovies(prev => [...prev, data]); // Add new movie to state
+        setNewMovie({ title: '', director: '', year: '', status: 'unwatched', poster_path: '' }); // Reset form
+      })
+      .catch(error => console.error('Error adding movie:', error));
+  };
+
+  // Handle deleting a movie
+  const handleDeleteMovie = (id) => {
+    fetch(`http://localhost:3020/movies/${id}`, {
+      method: 'DELETE'
+    })
+      .then(response => {
+        if (response.ok) {
+          setMovies(prev => prev.filter(movie => movie.id !== id)); // Remove movie from state
+        }
+      })
+      .catch(error => console.error('Error deleting movie:', error));
+  };
 
   // Render a loading state while fetching data
   if (loading) {
@@ -50,54 +92,108 @@ function App() {
     );
   }
 
-  // Main render with movie list and routing
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Movie Watchlist</h1>
-        {/* Button to toggle dark/light mode */}
         <button
-          onClick={() => setIsDarkMode(!isDarkMode)} // Toggle isDarkMode state on click
+          onClick={() => setIsDarkMode(!isDarkMode)}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
-          {isDarkMode ? 'Light Mode' : 'Dark Mode'} {/* Text changes based on mode */}
+          {isDarkMode ? 'Light Mode' : 'Dark Mode'}
         </button>
       </div>
-      {/* Define routes for the app */}
+
+      {/* Form to add a new movie */}
+      <form onSubmit={handleAddMovie} className="mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <input
+            type="text"
+            name="title"
+            value={newMovie.title}
+            onChange={handleInputChange}
+            placeholder="Title"
+            required
+            className="p-2 border rounded"
+          />
+          <input
+            type="text"
+            name="director"
+            value={newMovie.director}
+            onChange={handleInputChange}
+            placeholder="Director"
+            required
+            className="p-2 border rounded"
+          />
+          <input
+            type="number"
+            name="year"
+            value={newMovie.year}
+            onChange={handleInputChange}
+            placeholder="Year"
+            className="p-2 border rounded"
+          />
+          <select
+            name="status"
+            value={newMovie.status}
+            onChange={handleInputChange}
+            className="p-2 border rounded"
+          >
+            <option value="watched">Watched</option>
+            <option value="unwatched">Unwatched</option>
+          </select>
+          <input
+            type="text"
+            name="poster_path"
+            value={newMovie.poster_path}
+            onChange={handleInputChange}
+            placeholder="Poster Path (e.g., /abc123.jpg)"
+            className="p-2 border rounded"
+          />
+        </div>
+        <button
+          type="submit"
+          className="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+        >
+          Add Movie
+        </button>
+      </form>
+
       <Routes>
-        {/* Route for the movie list page */}
         <Route
           path="/"
           element={
             <ul className="space-y-4">
-              {/* Conditional rendering based on movies array */}
               {movies.length === 0 ? (
-                <li>No movies found</li> // Show if no movies exist
+                <li>No movies found</li>
               ) : (
-                // Map over movies to create a list item for each
                 movies.map(movie => (
                   <li key={movie.id} className="flex items-center p-4 bg-blue-50 dark:bg-gray-800 rounded shadow">
                     <img
                       src={movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : 'https://via.placeholder.com/92x138?text=No+Image'}
                       alt={movie.title}
-                      className="w-16 h-24 object-cover rounded mr-4"
+                      className="w-16 h-24 max-w-16 max-h-24 object-cover rounded mr-4"
                     />
-                    {/* Link to the movie’s detail page */}
-                    <Link to={`/movies/${movie.id}`} className="text-blue-500 hover:underline">
+                    <Link to={`/movies/${movie.id}`} className="text-blue-500 hover:underline flex-1">
                       {movie.title}
                     </Link>
+                    {/* Delete button for each movie */}
+                    <button
+                      onClick={() => handleDeleteMovie(movie.id)}
+                      className="ml-4 px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                    >
+                      Delete
+                    </button>
                   </li>
                 ))
               )}
             </ul>
           }
         />
-        {/* Route for individual movie detail pages */}
         <Route path="/movies/:id" element={<MovieDetail />} />
       </Routes>
     </div>
   );
 }
 
-// Export the App component as the default export
 export default App;
