@@ -6,6 +6,8 @@ Frontend interface for the Movie Watchlist application, displaying movies fetche
 - Movie list with thumbnails.
 - Detailed movie view with posters.
 - Dark/light mode toggle.
+- Add new movies via a form.
+- Delete movies from the list.
 
 ## Technologies
 - React.js
